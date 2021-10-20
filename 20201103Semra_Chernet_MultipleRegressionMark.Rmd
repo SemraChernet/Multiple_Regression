@@ -1,0 +1,427 @@
+---
+title: "Multiple Regression Lab"
+author: "Semra Chernet"
+date: "10/25/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath("C:/Users/Owner/Desktop/MyDesk/UW - MSBA/Q2/541 - Applied Regression/Data"))
+```
+
+#1. Create multiple scatterplots (5) of each explanatory variable versus price (y). 
+
+```{r library, results=FALSE, message=FALSE, warning=FALSE}
+
+library(readxl)
+library(tidyverse)
+library(mi)
+library(pander)
+library(scales)
+library(corrplot)
+
+
+```
+```{r Data, results='hide'}
+MRLabData <- read.csv("MRLabData.csv")
+#View(MRLabData)
+#str(MRLabData)
+#sapply(MRLabData, mode)
+#sapply(MRLabData, class)
+#We have a data frame with 298 observation of 27 variables.(the above code was #out intentionally)
+
+```
+```{r scatterplots, cache=TRUE, warning=FALSE}
+ggplot(data=MRLabData, aes(x=BEDS, y=PRICE))+
+  geom_point(size=2, position=position_jitter(width=0.5, height = 0.5))+
+  scale_y_continuous(labels=scales::dollar_format())+
+  xlab("# of Bedrooms (jittered)")+
+  ylab("Price")
+ggplot(data=MRLabData, aes(x=BATHS, y=PRICE))+
+  geom_point(size=2, position=position_jitter(width=0.5, height = 0.5))+
+  scale_y_continuous(labels=scales::dollar_format())+
+  xlab("# of Bathrooms (jittered)")+
+  ylab("Price")
+ggplot(data=MRLabData, aes(x=SQUARE.FEET, y=PRICE))+
+  geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())+
+  xlab("Square Feet")+
+  ylab("Price")
+ggplot(data=MRLabData, aes(x=YEAR.BUILT, y=PRICE))+
+  geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())+
+  xlab("Year Built")+
+  ylab("Price")
+ggplot(data=MRLabData, aes(x=LOT.SIZE, y=PRICE))+
+  geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())+
+  scale_x_continuous(labels=comma)+
+  xlab("Lot Size")+
+  ylab("Price")
+
+```
+
+
+#2. Identify which variable do you think best explains sales price (y).
+
+From the above plotting of each variable against PRICE, we can conclude that there is a visible linear correlation between PRICE and SQUARE FEET. We can also see that there is a weaker positive correlation between PRICE and # OF BEDROOMS; and PRICE and # OF BATHROOMS.
+
+
+#3. Create histograms (5) of all variables.
+
+
+```{r histograms, cache=TRUE, warning=FALSE, message=FALSE}
+hist(MRLabData$BEDS)
+hist(MRLabData$BATHS)
+hist(MRLabData$SQUARE.FEET)
+hist(MRLabData$YEAR.BUILT)
+hist(MRLabData$LOT.SIZE)
+hist(MRLabData$PRICE)
+```
+
+
+#4. Identify any variables that might benefit from data transformation, and transform as necessary.
+
+```{r}
+# To have a consistent data type, number of Bathroom has been changed to integer.
+MRLabData$BATHS<-as.integer(MRLabData$BATHS)
+
+
+
+#For the integer variables
+require(psych)
+index<-sapply(MRLabData, class)==c( "integer")
+numcolumns <-MRLabData[,index]
+round(t(describe(numcolumns)), 2)
+
+#In addition to the above visualization, I run descriptive analysis/summary for each integer variable to get good insight of what my dataset looks like. 
+```
+#4 Answer Continued
+
+In order to have good understanding about my dataset and decided which variable needs what type of transformation, I will be using the above data descriptive summary and the below scatter plot.
+
+I plotted smooth line over the exploratory graphs. It will help me to learn the pattern.
+
+From the above descriptive summary and from the below plotts, I think the below variables benefit from data transformation:-
+
+PRICE: the variable PRICE has a maximum value of 27,250,000 were as the minimum value is 250,000. As a result, our mean has been compromised. If we see the exploratory analysis, I have two main outliers for PRICE. 
+
+SQUARE FEET: the variable SQUARE FEET has a maximum value of 13610.00 and minimum value of 406.00. If we see the below plot, the maximum value is the outlier. As a result the skewness of our Histogram has been affected. Also out of the 298 obvservation, we have 274 row with SQUARE FEET value. 
+
+YEARBUILT: the variable YEARBUILT has a maximum value of 2021 and the minimum value of 1914. Form the below plot, we can learn that we dont have any house build in after 1914 until 1940. This also has affected the skewness of our histogram. 
+
+LOT SIZE: the variable LOT SIZE we have a minimum of 1 and maximum of 97,6179. The outliers on each extreme needs to be removed.
+
+NUMBER OF BEDROOMS: I don't think this variable needs transformation. There is no noticeable outlier and we have 298 rows. 
+
+NUMBER OF BATHROOMS: this variable doesn't have noticeable outlier but we have 24 missing rows.
+
+
+```{r loess, cache=TRUE, warning=FALSE, message=FALSE}
+ggplot(data=MRLabData, aes(x=BEDS, y=PRICE))+
+  geom_point(size=2, position=position_jitter(width=0.5, height = 0.5))+
+  scale_y_continuous(labels=scales::dollar_format())+
+  xlab("# of Bedrooms (jittered)")+
+  ylab("Price")+geom_smooth()
+ggplot(data=MRLabData, aes(x=BATHS, y=PRICE))+
+  geom_point(size=2, position=position_jitter(width=0.5, height = 0.5))+
+  scale_y_continuous(labels=scales::dollar_format())+
+  xlab("# of Bathrooms (jittered)")+
+  ylab("Price")+geom_smooth()
+ggplot(data=MRLabData, aes(x=SQUARE.FEET, y=PRICE))+
+  geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())+
+  xlab("Square Feet")+
+  ylab("Price")+geom_smooth()
+ggplot(data=MRLabData, aes(x=YEAR.BUILT, y=PRICE))+
+  geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())+
+  xlab("Year Built")+
+  ylab("Price")+geom_smooth()
+ggplot(data=MRLabData, aes(x=LOT.SIZE, y=PRICE))+
+  geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())+
+  scale_x_continuous(labels=comma)+
+  xlab("Lot Size")+
+  ylab("Price")+geom_smooth()
+
+```
+
+
+
+```{r selectsubset, include=FALSE}
+MRLAB2 <- MRLabData %>% select(PRICE,BEDS,BATHS,SQUARE.FEET,LOT.SIZE,YEAR.BUILT)
+#view(MRLAB2)
+```
+
+The first step of transforming my data set is to delete observations/rows with missing data.
+
+
+```{r deleteMissing}
+MRLAB3 <-  MRLAB2[complete.cases(MRLAB2), ]
+#view(MRLAB3)
+
+```
+
+
+Three observation shows a YEAR.BUILT value of 2021. I created a new column (YEAR.BUILT2) that changed the incorrect date to 2020.
+
+```{r year.built.correction}
+MRLAB4 <- MRLAB3 %>% mutate(YEAR.BUILT2 =
+                              ifelse(YEAR.BUILT>2020,
+                                     2020, YEAR.BUILT))
+```
+
+Next I removed outliers using the filter() function. 
+
+
+#5. Perform an OLS Regression including the variables above as explanatory.
+
+```{r correctedscatterplots, cache=TRUE, include=FALSE, warning=FALSE, message=FALSE}
+ggplot(data=MRLAB6, aes(x=BEDS, y=PRICE)) + geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())
+ggplot(data=MRLAB6, aes(x=BATHS, y=PRICE)) + geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())
+ggplot(data=MRLAB6, aes(x=SQUARE.FEET, y=PRICE)) + geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())
+ggplot(data=MRLAB6, aes(x=YEAR.BUILT2, y=PRICE)) + geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())
+ggplot(data=MRLAB6, aes(x=LOT.SIZE, y=PRICE)) + geom_point(size=2)+
+  scale_y_continuous(labels=scales::dollar_format())+
+  scale_x_continuous(labels = comma)
+
+```
+```{r correctedhistograms, cache=TRUE, include=FALSE, warning=FALSE, message=FALSE}
+hist(MRLAB6$BEDS)
+hist(MRLAB6$BATHS)
+hist(MRLAB6$SQUARE.FEET)
+hist(MRLAB6$YEAR.BUILT2)
+hist(MRLAB6$LOT.SIZE)
+hist(MRLAB6$PRICE)
+```
+```{r correctedloess, cache=TRUE, include=FALSE, warning=FALSE, message=FALSE}
+ggplot(data=MRLAB6, aes(x=BEDS, y=PRICE)) + geom_point(size=2)+geom_smooth()+
+  scale_y_continuous(labels=scales::dollar_format())
+ggplot(data=MRLAB6, aes(x=BATHS, y=PRICE)) + geom_point(size=2)+geom_smooth()+
+  scale_y_continuous(labels=scales::dollar_format())
+ggplot(data=MRLAB6, aes(x=SQUARE.FEET, y=PRICE)) + geom_point(size=2)+geom_smooth()+
+  scale_y_continuous(labels=scales::dollar_format())
+ggplot(data=MRLAB6, aes(x=YEAR.BUILT2, y=PRICE)) + geom_point(size=2)+geom_smooth()+
+  scale_y_continuous(labels=scales::dollar_format())
+ggplot(data=MRLAB6, aes(x=LOT.SIZE, y=PRICE)) + geom_point(size=2)+geom_smooth()+
+  scale_y_continuous(labels=scales::dollar_format())+
+  scale_x_continuous(labels = comma)
+
+```
+```{r Regression1}
+
+HouseM1<-lm(PRICE~BATHS+BEDS+SQUARE.FEET+LOT.SIZE+ YEAR.BUILT2, data=MRLAB6)
+summary(HouseM1)
+```
+```{r}
+MRLAB7<-cor(MRLAB6)
+corrplot(MRLAB7, method="ellipse")
+corrplot(MRLAB7, method="number")
+
+```
+#6. Discuss the significance of each of your variables.
+
+What we can learn from the above SUMMARY of House Model1 is that BEDS and SQUARE.FEET appear to be statistically significant. SQUARE.FEET is statistically significant at the <0.001 significance level, while BEDS is statistically significant at the 0.01 significance level. BATHS, LOT.SIZE and YEARBUILT2 does not appear to be a statistically significant variables.
+
+On another note, from the corrplot paint, we can confirm that there is a strong linear correlation between PRICE and SQUAR FEET, a weaker(positive) correlation between PRICE and BATHs;  and PRICE and BEDS. While there is a negative correlation between PRICE And LOT.SIZE
+
+
+#7. Is the model significant?
+
+Generally, the goodness of fit of this model seems to be acceptable (R^2=00.7485 | R^2 adjusted=0.739)
+
+We have p-value < 2.2e-16, which indicate a significant result. The actual p-value is even smaller than 2.2e-16
+
+#8. How much variation in price is explained in this model?
+
+We have R^2=0.7485 | R^2 adjusted=0.739, this means that changes in covariates of the model is explained by 74% of the changes in response. 
+
+We also have negative intercept that could lead us to think that there might be a better model. 
+
+Also the adjusted R^2 is slightly lower than the Multiple R^2, which can tell us that if we remove at least one covariates, we might get a better model.
+
+```{r Regression_no_bath, include=FALSE}
+HouseM2_NoBath<-lm(PRICE~BEDS+BATHS+SQUARE.FEET, data=MRLAB6)
+summary(HouseM2_NoBath)
+```
+```{r Regression2, include=FALSE}
+HouseM3<-lm(PRICE~BATHS+BEDS+SQUARE.FEET+LOT.SIZE, data=MRLAB6)
+summary(HouseM3)
+```
+```{r Regression3, include=FALSE}
+HouseM4<-lm(PRICE~SQUARE.FEET,data=MRLAB6)
+summary(HouseM4)
+```
+```{r Residuals1, include=FALSE}
+
+plot(HouseM1)
+
+Price.stdres1 <-residuals(HouseM1)
+```
+
+#9. & #10. Create a residual plot for each of your explanatory variables. Describe and interpret the residuals for each explanatory variable.
+
+
+```{r ResidualplotBEDS}
+res <-ggplot(data=MRLAB6, aes(x=BEDS, y=Price.stdres1))+
+geom_point(position=position_jitter(width=0.5, height=0.5))
+res+geom_hline(yintercept = 0)
+
+```
+I used jitter function to eliminate overplotting. Most points are with in +/-1 standard deviation. While there is one point that has exceed +/- 3 standard deviation.
+
+
+```{r ResidualplotsBATHS}
+res<-ggplot(data=MRLAB6, aes(x=BATHS, y=Price.stdres1))+
+  geom_point(position=position_jitter(width=0.5, height=0.5))
+res+geom_hline(yintercept = 0)
+
+```
+There is only one point that exceed +/- 3 standard deviations from the least squares line. 
+
+```{r ResidualplotsSQUAREFEET}
+res<-ggplot(data=MRLAB6, aes(x=SQUARE.FEET, y=Price.stdres1))+geom_point()
+res+geom_hline(yintercept = 0)
+```
+I used jitter function in order to eliminate overplotting. There is one point that exceed +/- 3 standard deviations from the least squares line. 
+
+
+```{r ResidualplotsLOTSIZE}
+res<-ggplot(data=MRLAB6, aes(x=LOT.SIZE, y=Price.stdres1))+geom_point()
+res+geom_hline(yintercept = 0)
+```
+The main cloud is points towards the very left of the plot. It is hard to tell the trend.But except the one outlier, almost all points fall under +/- 2 standard deviations
+
+```{r ResidualplotsYEARBUILT}
+res<-ggplot(data=MRLAB6, aes(x=YEAR.BUILT2, y=Price.stdres1))+geom_point()
+res+geom_hline(yintercept = 0)
+
+
+```
+
+It seems like the residuals have higher variability for positive residuals. Additionally, it seems that the variability of the residuals increases for larger fitted observations
+
+```{r Residual2, include=FALSE}
+plot(HouseM1)
+
+Price.stdres2 <-residuals(HouseM1)
+
+ggplot(data=MRLAB6, aes(x=BEDS, y=Price.stdres2))+geom_point()
+ggplot(data=MRLAB6, aes(x=BATHS, y=Price.stdres2))+geom_point()
+ggplot(data=MRLAB6, aes(x=SQUARE.FEET, y=Price.stdres2))+geom_point()
+ggplot(data=MRLAB6, aes(x=LOT.SIZE, y=Price.stdres2))+geom_point()
+
+```
+
+
+```{r Residual3, include=FALSE}
+plot(HouseM3)
+
+Price.stdres3 <-residuals(HouseM3)
+
+
+ggplot(data=MRLAB6, aes(x=SQUARE.FEET, y=Price.stdres3))+geom_point()
+
+```
+
+
+```{r logs, include=FALSE}
+MRLAB6$LOGPRICE <- log(MRLAB6$PRICE)
+MRLAB6$LOGBed <- log(MRLAB6$BEDS)
+MRLAB6$LOGBath <- log(MRLAB6$BATHS)
+MRLAB6$LOGSqFoot <- log(MRLAB6$SQUARE.FEET)
+MRLAB6$LOGLotSize <- log(MRLAB6$LOT.SIZE)
+MRLAB6$LOGYearBuilt <- log(MRLAB6$YEAR.BUILT2)
+```
+
+
+```{r RegLog, include=FALSE}
+
+HouseMlog<-lm(LOGPRICE~LOGBath+LOGSqFoot+LOGLotSize+LOGYearBuilt, data=MRLAB6)
+summary(HouseMlog)
+```
+
+```{r ResidLog, include=FALSE}
+PriceLOG.stdres <-residuals(HouseMlog)
+
+
+ggplot(data=MRLAB6, aes(x=LOGBed, y=PriceLOG.stdres))+geom_point()
+ggplot(data=MRLAB6, aes(x=LOGBath, y=PriceLOG.stdres))+geom_point()
+ggplot(data=MRLAB6, aes(x=LOGSqFoot, y=PriceLOG.stdres))+geom_point()
+ggplot(data=MRLAB6, aes(x=LOGLotSize, y=PriceLOG.stdres))+geom_point()
+ggplot(data=MRLAB6, aes(x=LOGYearBuilt, y=PriceLOG.stdres))+geom_point()
+```
+
+#Additional Plots
+
+```{r predictions, include=FALSE}
+Price.predict=predict(lm(PRICE~BATHS+BEDS+SQUARE.FEET+LOT.SIZE+YEAR.BUILT2, data=MRLAB6))
+
+```
+
+
+```{r predictedvsActual}
+ggplot(MRLAB6, aes(x = BEDS, y = PRICE)) +
+  geom_point(aes(y=PRICE, color="Actual"),
+             alpha = 0.3,
+             position=position_jitter(width=0.5, height = 2))+ # Points of actual values
+  geom_point(position=position_jitter(width=0.5, height = 2), 
+             aes(y = Price.predict, color="Predicted"), shape = 1)+ # Points of predicted values
+  xlab("# of Bedrooms (jittered)")+
+  ylab("Price")+
+  scale_color_manual(name="Price",
+                     values=c(Actual="red", Predicted="black"))+
+  scale_y_continuous(labels=scales::dollar_format())
+
+
+ggplot(MRLAB6, aes(x = BATHS, y = PRICE)) +
+  geom_point(aes(y=PRICE, color="Actual"),
+             alpha=0.3,
+             position=position_jitter(width=0.5, height = 2))+ # Points of actual values
+  geom_point(position=position_jitter(width=0.5, height = 2),
+             aes(y = Price.predict, color="Predicted"), shape = 1)+ # Points of predicted values
+  xlab("# of Bathrooms (jittered)")+
+  ylab("Price")+
+  scale_color_manual(name="Price",
+                     values=c(Actual="red", Predicted="black"))+
+  scale_y_continuous(labels=scales::dollar_format())
+
+ggplot(MRLAB6, aes(x = SQUARE.FEET, y = PRICE)) +
+  geom_point(aes(color="Actual"),
+             alpha=0.3) + # Points of actual values
+  geom_point(aes(y = Price.predict, color="Predicted"), shape = 1)+
+  xlab("Square Feet")+
+  ylab("Price")+
+  scale_color_manual(name="Price",
+                     values=c(Actual="red", Predicted="black"))+
+  scale_y_continuous(labels=scales::dollar_format())
+
+ggplot(MRLAB6, aes(x = LOT.SIZE, y = PRICE)) +
+  geom_point(aes(color="Actual"),
+             alpha=0.3)+
+  geom_point(aes(y = Price.predict, color="Predicted"), shape = 2, alpha=0.4)+
+  xlab("Lot Size")+
+  ylab("Price")+
+  scale_color_manual(name="Price",
+                     values=c(Actual="red", Predicted="black"))+
+  scale_y_continuous(labels=scales::dollar_format())+
+  scale_x_continuous(labels = comma)
+
+ggplot(MRLAB6, aes(x = YEAR.BUILT2, y = PRICE)) +
+  geom_point(aes(color="Actual"),
+             alpha=0.7)+ 
+  geom_point(aes(y = Price.predict, color="Predicted"), shape = 3, alpha=0.6)+
+  xlab("Year Built")+
+  ylab("Price")+
+  scale_color_manual(name="Price",
+                     values=c(Actual="red", Predicted="black"))+
+  scale_y_continuous(labels=scales::dollar_format())
+
+
+```
